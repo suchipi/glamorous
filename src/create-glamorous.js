@@ -151,8 +151,8 @@ function createGlamorous(splitProps) {
 
       function withComponent(newComp, options) {
         return glamorous(newComp, {
-          ...options,
           forwardProps: GlamorousComponent.forwardProps,
+          ...options,
         })(GlamorousComponent.styles)
       }
 
