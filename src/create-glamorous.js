@@ -5,6 +5,7 @@
 import React, {Component} from 'react'
 import {PropTypes} from './react-compat'
 import {CHANNEL} from './constants'
+import withTheme from './with-theme'
 import getGlamorClassName from './get-glamor-classname'
 
 export default createGlamorous
@@ -45,74 +46,36 @@ function createGlamorous(splitProps) {
        * @param {Object} theme the theme object
        * @return {ReactElement} React.createElement
        */
-      class GlamorousComponent extends Component {
-        state = {theme: null}
-        setTheme = theme => this.setState({theme})
+      const GlamorousComponent = withTheme(function BaseGlamorousComponent(
+        props,
+        context,
+      ) {
+        const {toForward, cssOverrides} = splitProps(props, GlamorousComponent)
 
-        componentWillMount() {
-          const {theme} = this.props
-          if (this.context[CHANNEL]) {
-            // if a theme is provided via props,
-            // it takes precedence over context
-            this.setTheme(theme ? theme : this.context[CHANNEL].getState())
-          } else {
-            this.setTheme(theme || {})
-          }
-        }
+        // freeze the theme object in dev mode
+        const theme = process.env.NODE_ENV === 'production' ?
+          props.theme :
+          Object.freeze(props.theme)
 
-        componentWillReceiveProps(nextProps) {
-          if (this.props.theme !== nextProps.theme) {
-            this.setTheme(nextProps.theme)
-          }
-        }
+        // create className to apply
+        const fullClassName = getGlamorClassName(
+          GlamorousComponent.styles,
+          props,
+          cssOverrides,
+          theme,
+          context,
+        )
+        const debugClassName = glamorous.config.useDisplayNameInClassName ?
+          cleanClassname(GlamorousComponent.displayName) :
+          ''
+        const className = `${fullClassName} ${debugClassName}`.trim()
 
-        componentDidMount() {
-          if (this.context[CHANNEL] && !this.props.theme) {
-            // subscribe to future theme changes
-            this.unsubscribe = this.context[CHANNEL].subscribe(this.setTheme)
-          }
-        }
-
-        componentWillUnmount() {
-          // cleanup subscription
-          this.unsubscribe && this.unsubscribe()
-        }
-
-        render() {
-          // in this function, we're willing to sacrafice a little on
-          // readability to get better performance because it actually
-          // matters.
-          const props = this.props
-          const {toForward, cssOverrides} = splitProps(
-            props,
-            GlamorousComponent,
-          )
-
-          // freeze the theme object in dev mode
-          const theme = process.env.NODE_ENV === 'production' ?
-            this.state.theme :
-            Object.freeze(this.state.theme)
-
-          // create className to apply
-          const fullClassName = getGlamorClassName(
-            GlamorousComponent.styles,
-            props,
-            cssOverrides,
-            theme,
-            this.context,
-          )
-          const debugClassName = glamorous.config.useDisplayNameInClassName ?
-            cleanClassname(GlamorousComponent.displayName) :
-            ''
-          const className = `${fullClassName} ${debugClassName}`.trim()
-
-          return React.createElement(GlamorousComponent.comp, {
-            ref: props.innerRef,
-            ...toForward,
-            className,
-          })
-        }
-      }
+        return React.createElement(GlamorousComponent.comp, {
+          ref: props.innerRef,
+          ...toForward,
+          className,
+        })
+      }, {noWarn: true})
 
       GlamorousComponent.propTypes = {
         className: PropTypes.string,

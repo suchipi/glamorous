@@ -20,6 +20,12 @@ const getMockedContext = unsubscribe => ({
   },
 })
 
+const nodeEnv = process.env.NODE_ENV
+
+afterEach(() => {
+  process.env.NODE_ENV = nodeEnv
+})
+
 test('sanity test', () => {
   const Div = glamorous.div({marginLeft: 24})
   expect(render(<Div />)).toMatchSnapshotWithGlamor()
@@ -333,6 +339,7 @@ test('renders a component with theme properties', () => {
 
 test('in development mode the theme is frozen and cannot be changed', () => {
   expect.assertions(1)
+  process.env.NODE_ENV = 'development'
   const Comp = glamorous.div(
     {
       color: 'red',
