@@ -104,7 +104,14 @@ function createGlamorous(splitProps) {
           const debugClassName = glamorous.config.useDisplayNameInClassName ?
             cleanClassname(GlamorousComponent.displayName) :
             ''
-          const className = `${fullClassName} ${debugClassName}`.trim()
+          const className = [
+            fullClassName,
+            debugClassName,
+            GlamorousComponent.toStringClassName,
+          ]
+            .filter(Boolean)
+            .join(' ')
+            .trim()
 
           return React.createElement(GlamorousComponent.comp, {
             ref: props.innerRef,
@@ -156,6 +163,22 @@ function createGlamorous(splitProps) {
         })(GlamorousComponent.styles)
       }
 
+      function toString() {
+        if (!GlamorousComponent.toStringClassName) {
+          GlamorousComponent.toStringClassName = cleanClassname(
+            [
+              'to-string-',
+              // TODO: we need to generate something that's
+              // unique but consistent
+              GlamorousComponent.displayName,
+            ]
+              .filter(Boolean)
+              .join(' '),
+          )
+        }
+        return `.${GlamorousComponent.toStringClassName}`
+      }
+
       Object.assign(
         GlamorousComponent,
         getGlamorousComponentMetadata({
@@ -165,7 +188,7 @@ function createGlamorous(splitProps) {
           forwardProps,
           displayName,
         }),
-        {withComponent},
+        {withComponent, toString},
       )
       return GlamorousComponent
     }
@@ -193,6 +216,9 @@ function createGlamorous(splitProps) {
       // set the displayName to something that's slightly more
       // helpful than `GlamorousComponent` :)
       displayName: displayName || `glamorous(${getDisplayName(comp)})`,
+      // initialize to an empty string
+      // this will be set if `toString()` is ever called
+      toStringClassName: '',
     }
   }
 
